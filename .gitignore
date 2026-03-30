@@ -209,3 +209,4 @@ __marimo__/
 # SQLLITE
 *.db
 checkpoints.db
+checkpoints.*
