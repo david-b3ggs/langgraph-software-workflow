@@ -19,6 +19,9 @@ This file is read by an AI test agent before it writes, runs, or evaluates tests
 ## Existing markdown files found in the repo
 {existing_md}
 
+## Fetched library documentation
+{fetched_docs}
+
 Write TESTING.md covering:
 1. **Test Runner** — exact command(s) to run the full test suite (e.g. `pytest`, `go test ./...`, `npm test`)
 2. **Test Layout** — where tests live relative to source (co-located, `tests/`, etc.)
@@ -43,10 +46,16 @@ async def generate_docs_agent_md_node(state: IngestionState) -> dict:
         existing_md_parts.append(f"### {filename}\n{snippet}")
     existing_md = "\n\n".join(existing_md_parts) or "(none found)"
 
+    fetched_docs_parts = []
+    for pkg_name, doc_content in (state.get("fetched_docs") or {}).items():
+        fetched_docs_parts.append(f"### {pkg_name}\n{doc_content[:3000]}")
+    fetched_docs_section = "\n\n".join(fetched_docs_parts) or "(none fetched)"
+
     prompt = _PROMPT.format(
         planner_md=state.get("planner_md", "(not yet generated)"),
         structure=structure,
         existing_md=existing_md,
+        fetched_docs=fetched_docs_section,
     )
     llm = get_llm()
     response = await llm.ainvoke([HumanMessage(content=prompt)])

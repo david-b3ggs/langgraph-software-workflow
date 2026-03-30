@@ -16,6 +16,9 @@ This file is read by an AI planning agent before it breaks down development task
 ## Existing markdown files found in the repo
 {existing_md}
 
+## Fetched library documentation
+{fetched_docs}
+
 Write a clear, factual PROJECT.md covering:
 1. **Purpose** — what this project does in 2-3 sentences
 2. **Architecture** — high-level component breakdown (dirs, layers, data flow). If available, add where this project sits in grander architecture.
@@ -39,7 +42,12 @@ async def generate_planner_md_node(state: IngestionState) -> dict:
         existing_md_parts.append(f"### {filename}\n{snippet}")
     existing_md = "\n\n".join(existing_md_parts) or "(none found)"
 
-    prompt = _PROMPT.format(structure=structure, existing_md=existing_md)
+    fetched_docs_parts = []
+    for pkg_name, doc_content in (state.get("fetched_docs") or {}).items():
+        fetched_docs_parts.append(f"### {pkg_name}\n{doc_content[:3000]}")
+    fetched_docs_section = "\n\n".join(fetched_docs_parts) or "(none fetched)"
+
+    prompt = _PROMPT.format(structure=structure, existing_md=existing_md, fetched_docs=fetched_docs_section)
     llm = get_llm()
     response = await llm.ainvoke([HumanMessage(content=prompt)])
     planner_md = response.content.strip()

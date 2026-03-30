@@ -19,6 +19,9 @@ This file is read by an AI frontend/docs agent before it writes UI or documentat
 ## Existing markdown files found in the repo
 {existing_md}
 
+## Fetched library documentation
+{fetched_docs}
+
 Write BRAND_STYLES.md covering:
 1. **UI Framework & Component Library** — what is in use (infer from package.json, imports, or existing docs)
 2. **Styling Approach** — CSS methodology, design tokens, theming (Tailwind, CSS Modules, styled-components, etc.)
@@ -43,10 +46,16 @@ async def generate_frontend_md_node(state: IngestionState) -> dict:
         existing_md_parts.append(f"### {filename}\n{snippet}")
     existing_md = "\n\n".join(existing_md_parts) or "(none found)"
 
+    fetched_docs_parts = []
+    for pkg_name, doc_content in (state.get("fetched_docs") or {}).items():
+        fetched_docs_parts.append(f"### {pkg_name}\n{doc_content[:3000]}")
+    fetched_docs_section = "\n\n".join(fetched_docs_parts) or "(none fetched)"
+
     prompt = _PROMPT.format(
         planner_md=state.get("planner_md", "(not yet generated)"),
         structure=structure,
         existing_md=existing_md,
+        fetched_docs=fetched_docs_section,
     )
     llm = get_llm()
     response = await llm.ainvoke([HumanMessage(content=prompt)])

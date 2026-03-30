@@ -19,6 +19,9 @@ This file is read by an AI backend/code agent before it writes or edits code.
 ## Existing markdown files found in the repo
 {existing_md}
 
+## Fetched library documentation
+{fetched_docs}
+
 Write CODE_STYLES.md covering:
 1. **File & Module Layout** — how files are organised, where new modules belong
 2. **Naming Conventions** — variables, functions, classes, files (infer from structure and existing docs)
@@ -43,10 +46,16 @@ async def generate_backend_md_node(state: IngestionState) -> dict:
         existing_md_parts.append(f"### {filename}\n{snippet}")
     existing_md = "\n\n".join(existing_md_parts) or "(none found)"
 
+    fetched_docs_parts = []
+    for pkg_name, doc_content in (state.get("fetched_docs") or {}).items():
+        fetched_docs_parts.append(f"### {pkg_name}\n{doc_content[:3000]}")
+    fetched_docs_section = "\n\n".join(fetched_docs_parts) or "(none fetched)"
+
     prompt = _PROMPT.format(
         planner_md=state.get("planner_md", "(not yet generated)"),
         structure=structure,
         existing_md=existing_md,
+        fetched_docs=fetched_docs_section,
     )
     llm = get_llm()
     response = await llm.ainvoke([HumanMessage(content=prompt)])
