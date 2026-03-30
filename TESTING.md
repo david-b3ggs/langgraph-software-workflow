@@ -1,96 +1,87 @@
-# TESTING.md — Test Execution Guide
+# TESTING.md
 
 ## Test Runner
 
-```bash
-# Activate venv first
-source .venv/bin/activate  # or: .venv/bin/python for direct execution
+Run the full test suite from the project root:
 
-# Run all tests
+```bash
 pytest
+```
 
-# Run with verbose output
+For verbose output:
+
+```bash
 pytest -v
-
-# Run a specific test file
-pytest tests/test_routers.py -v
-
-# Run with logging output visible
-pytest -s
 ```
 
-## Test Structure
-
-```
-tests/
-  __init__.py
-  test_state_models.py     — TypedDict schemas and reducer behaviour
-  test_routers.py          — Routing function logic (pure functions, no LLM)
-  test_graph_tools.py      — Import graph builder and subgraph extraction
-```
-
-## Environment for Tests
-
-Tests do not require `ANTHROPIC_API_KEY` — Phase 1 and 2 tests cover pure I/O and routing logic only. Set these in `.env` or as env vars for LLM integration tests (Phase 4+):
-
-```
-ANTHROPIC_API_KEY=sk-...
-LANGSMITH_API_KEY=lsv2_...
-LANGSMITH_PROJECT=AI-WORKFLOW
-```
-
-## Integration Test: Dev Loop End-to-End (Scaffold)
+Since the project uses `pytest-asyncio` for async test support, ensure the asyncio mode is set. If not configured in `pyproject.toml` or `pytest.ini`, run with:
 
 ```bash
-# Pipe 'y' to auto-approve the plan
-echo "y" | .venv/bin/python scripts/run_dev_loop.py \
-  --task '{"title":"smoke test","type":"feature","scope":"backend"}'
+pytest -v --asyncio-mode=auto
 ```
 
-Expected output:
-- All nodes log their names in order
-- HITL prompt appears with plan
-- After approval: workers execute, review passes, tests pass, artifact_update runs
-- `checkpoints.db` created or updated
+## Test Layout
 
-## Integration Test: Ingestion Pipeline
+Tests exist in two locations:
+
+| Location | Description |
+|---|---|
+| `tests/` | Top-level test directory (currently contains `__init__.py` only) |
+| `src/nodes/dev_loop/test_loop.py` | Co-located test file alongside the dev loop source code |
+
+The project uses a hybrid layout: unit/integration tests for specific modules are co-located with their source under `src/nodes/`, while the top-level `tests/` directory serves as an additional test root.
+
+Both locations are discovered automatically by `pytest` with default settings, since test files follow the `test_*.py` naming convention.
+
+## Test Types
+
+| Type | Present | Notes |
+|---|---|---|
+| **Unit tests** | Yes | `src/nodes/dev_loop/test_loop.py` tests dev loop graph logic |
+| **Integration tests** | Likely | Graph-based orchestration tests may exercise multiple nodes together; async patterns suggest integration-level coverage of LangGraph state transitions |
+| **End-to-end tests** | Not evident | No dedicated e2e test files or fixtures observed |
+
+Tests are not currently separated by type via directory structure or markers. All tests are discovered and run together by `pytest`.
+
+## Coverage
+
+Generate a coverage report using `pytest-cov` (install if not already present):
 
 ```bash
-.venv/bin/python scripts/run_ingestion.py --repo-path /path/to/target/repo
+pip install pytest-cov
 ```
 
-Expected output:
-- Both analysis tracks log simultaneously (parallel execution)
-- 4 MD files written to the target repo root
-- `ingestion_complete: True`
-
-## Resuming a Suspended Run
-
-Each run prints a `Thread ID` at completion. Use it to resume after a checkpoint:
+Run with coverage:
 
 ```bash
-.venv/bin/python scripts/run_dev_loop.py \
-  --task '{"title":"add login","type":"feature","scope":"both"}' \
-  --thread-id <thread-id-from-previous-run>
+pytest --cov=src --cov-report=term-missing
 ```
 
-## Adding New Tests
+For an HTML coverage report:
 
-- Place test files in `tests/`
-- Name test functions `test_<what>_<condition>`
-- Routing function tests: pass a minimal `DevLoopState` dict with only the fields the router reads
-- Tool tests: use `tmp_path` (pytest fixture) for any file I/O
-- Async tests: use `@pytest.mark.asyncio` and `pytest-asyncio`
-
-```python
-import pytest
-from src.routers.dev_loop_routers import route_review
-
-def test_route_review_passes_when_result_passed():
-    state = {"review_result": {"passed": True, "feedback": []}, "review_retry_count": 0}
-    assert route_review(state) == "test_loop"
+```bash
+pytest --cov=src --cov-report=html
 ```
 
-## Checkpoints Database
+The HTML report will be generated in `htmlcov/`.
 
-`checkpoints.db` is created automatically in the project root. It is a SQLite database managed by `AsyncSqliteSaver`. Do not commit it to version control. Delete it to reset all run state.
+## Fixtures & Helpers
+
+- **`tests/__init__.py`** — Present but likely empty; makes the `tests/` directory a package for import resolution.
+- **Async test support** — `pytest-asyncio` (≥0.23.0) is a declared dependency. Async test functions should be decorated with `@pytest.mark.asyncio` or run with `--asyncio-mode=auto` to auto-detect async tests.
+- **Environment configuration** — Tests that exercise LLM-calling agents or graph nodes may require a `.env` file with valid API keys (minimally `ANTHROPIC_API_KEY`). For unit tests that mock external calls, no API keys are needed.
+- **SQLite checkpointing** — Tests involving graph state persistence use `aiosqlite` and `langgraph-checkpoint-sqlite`. These create temporary SQLite databases; no external database setup is required.
+
+## CI Integration
+
+No CI configuration files (e.g., `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`) were detected in the repository structure. If CI is added, the recommended test command is:
+
+```bash
+pytest -v --asyncio-mode=auto --tb=short
+```
+
+For CI environments where API keys are unavailable, consider marking LLM-dependent tests with a custom marker and skipping them:
+
+```bash
+pytest -v --asyncio-mode=auto -m "not requires_api_key"
+```

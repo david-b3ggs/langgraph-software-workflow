@@ -1,88 +1,65 @@
-# PROJECT.md — Multi-Agent Software Development Loop
+# PROJECT.md
 
 ## Purpose
 
-This project is a multi-agent software development orchestration system built on LangGraph (Python). It automates the full dev cycle for a target repository: task intake → AI planning → parallel code generation → code review → test execution → artifact commit, with human-in-the-loop checkpoints and structured escalation paths.
+This project implements a multi-agent software development orchestration loop using LangGraph. It provides an automated pipeline that analyzes existing codebases to generate contextual markdown files (PROJECT.md, CODE_STYLES.md, etc.), then runs a continuous development loop where specialized AI agents collaborate to plan, implement, and validate software changes. The system includes an ingestion/bootstrap phase (Phase 0) for cold-start repo analysis and a persistent dev loop for ongoing task execution.
 
-## Architecture Overview
+## Architecture
 
-The system is composed of two independently runnable pipelines:
-
-### Phase 0 — Ingestion Pipeline
-Runs once per target repository. Analyzes the codebase and generates the four MD context files that all agents depend on. Skips if MD files are already current (hash comparison). Two parallel analysis tracks (markdown scan + structure detection) feed into four parallel MD generators.
-
-### Dev Loop — Main Orchestration Pipeline
-Receives a task spec (GitHub issue, Jira ticket, or plain prompt) and executes:
-
-```
-task_ingestion → context_assembly → planner → human_gate (HITL)
-  → [parallel workers: backend / frontend / docs]
-  → code_review_graph → review_gate → test_loop → artifact_update
-```
-
-Failure paths route to `user_elicitation`, which surfaces a structured escalation artifact instead of crashing.
-
-## Key Frameworks and Technologies
-
-| Component | Technology |
-|---|---|
-| Orchestration | LangGraph 0.2+ (Python) |
-| LLM | Anthropic Claude (via `langchain-anthropic`) |
-| Checkpointing | `AsyncSqliteSaver` (aiosqlite) |
-| Observability | LangSmith (`LANGSMITH_PROJECT=AI-WORKFLOW`) |
-| Import graph | NetworkX |
-| Git diff parsing | unidiff |
-| Code review | CodeRabbit API (LLM fallback when key absent) |
-| Config | Pydantic BaseSettings |
-
-## Languages Supported (Import Graph)
-
-The `code_review_graph` node builds an import dependency graph for token-efficient code review. Supported: Python (AST), Go (regex), TypeScript/JavaScript (regex). Falls back gracefully to changed-files-only for other languages.
-
-## Repository Layout
+### High-Level Components
 
 ```
 src/
-  config.py              — Pydantic settings, env loading
-  llm/client.py          — ChatAnthropic factory (cached, single source of truth)
-  state/                 — TypedDict state schemas + reducers
-  graphs/                — Graph wiring and compile functions
-  nodes/ingestion/       — Ingestion pipeline nodes
-  nodes/dev_loop/        — Dev loop nodes
-  routers/               — Pure routing functions (no side effects)
-  tools/                 — I/O tools: file, git, graph, context
-scripts/
-  run_ingestion.py       — CLI: run ingestion pipeline on a repo
-  run_dev_loop.py        — CLI: run dev loop for a task (handles HITL)
+  └── nodes/
+        └── dev_loop/       — Core development loop graph nodes and logic
+scripts/                     — Utility/runner scripts
+tests/                       — Test suite
 ```
 
-## Inter-Agent Communication
+### Data Flow
 
-Agents do not call each other. All communication flows through the shared `DevLoopState` dict managed by the orchestrator. The `worker_outputs` field uses an `operator.or_` reducer so parallel workers merge results without overwriting each other.
+1. **Ingestion Pipeline (Phase 0)** — Runs once per repo. Performs parallel analysis of repo structure (directory layout, DB schemas, frameworks, tests) and existing markdown/README files. Optionally fetches external docs for detected dependencies. Generates context markdown files (PROJECT.md, CODE_STYLES.md, BRAND_STYLES.md, TESTING.md).
 
-## Human-in-the-Loop
+2. **Dev Loop** — A LangGraph-based stateful graph that orchestrates agent interactions. Nodes in the graph represent agent responsibilities (planning, implementation, validation). State is checkpointed (via `langgraph-checkpoint-sqlite` / `aiosqlite`) to enable retry/resume on failure.
 
-The `human_gate` node uses `interrupt()` to pause execution. The CLI surfaces the planner's subtask dependency graph, waits for approval, then resumes via `Command(resume=True)`. Thread ID is printed at the end of each run for resuming from checkpoints.
+3. **State flows through the LangGraph graph** with checkpointing at each node transition, enabling persistence and recovery.
 
-## Retry and Escalation Policy
+### Key Layers
 
-| Gate | Max Retries | On Cap |
-|---|---|---|
-| Planner schema validation | 2 (in-node) | Halt |
-| Review gate | 2 | User elicitation |
-| Test loop | 3 | User elicitation |
+- **Graph Definition** — LangGraph graph(s) defining node transitions and conditional edges
+- **Nodes/Agents** — Individual agent logic housed under `src/nodes/`
+- **State Schema** — Pydantic models defining the shared state passed between nodes
+- **Checkpointing** — SQLite-backed persistence for graph state
 
-## Dev Cycle Notes
+## Languages & Frameworks
 
-- Install: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
-- Run ingestion: `.venv/bin/python scripts/run_ingestion.py --repo-path /path/to/repo`
-- Run dev loop: `.venv/bin/python scripts/run_dev_loop.py --task '{"title":"...","type":"feature","scope":"both"}'`
-- Resume a run: add `--thread-id <id>` (printed at end of each run)
-- Checkpoints: stored in `checkpoints.db` (SQLite, created automatically)
-- Tracing: set `LANGSMITH_API_KEY` in `.env` — traces appear in project `AI-WORKFLOW`
+| Technology | Role |
+|---|---|
+| **Python** | Primary language |
+| **LangGraph** (≥0.2.0) | Graph-based agent orchestration framework |
+| **LangChain** (≥0.2.0) | LLM interaction abstractions and tooling |
+| **langchain-anthropic** (≥0.1.0) | Anthropic (Claude) model integration |
+| **langgraph-checkpoint-sqlite** (≥0.1.0) | SQLite-based state checkpointing for graph persistence |
+| **Pydantic** (≥2.0.0) | State schema validation and settings management |
+| **pydantic-settings** (≥2.0.0) | Environment/configuration management |
+| **unidiff** (≥0.7.5) | Parsing and handling of unified diff / patch files |
+| **networkx** (≥3.0) | Graph analysis (likely for dependency or structure analysis) |
+| **httpx** (≥0.27.0) | Async HTTP client (for doc fetching and API calls) |
+| **aiosqlite** (≥0.19.0) | Async SQLite access for checkpointing |
+| **python-dotenv** (≥1.0.0) | Environment variable loading from `.env` files |
+| **pytest** (≥8.0.0) / **pytest-asyncio** (≥0.23.0) | Testing framework with async support |
 
+## Key Conventions
 
-## TO ADD LATER:
-- Adding Langsmith to add observability to workflows
-- Add library of skills to be injected at run time depending on framework/language/interfaces
-- Transform this into a subgraph (no reason to yet)
+- **Async patterns** — The project uses async I/O throughout (httpx, aiosqlite, pytest-asyncio), indicating graph nodes and agents are implemented as async functions.
+- **Pydantic for state** — State schemas and configuration use Pydantic v2 models (`pydantic-settings` for env-based config).
+- **Environment configuration** — Uses `.env` files via `python-dotenv` for API keys and settings.
+- **Markdown-driven context** — The system generates and consumes structured markdown files (PROJECT.md, CODE_STYLES.md, BRAND_STYLES.md, TESTING.md) as shared context between agents and phases.
+- **Module layout** — Source code lives under `src/` with node implementations organized by function under `src/nodes/`. Tests colocate with source (`test_loop.py` alongside dev_loop code) and also exist in a top-level `tests/` directory.
+- **Diff-based changes** — The `unidiff` dependency indicates agents produce or consume unified diffs/patches for code modifications rather than full file rewrites.
+
+## Entry Points
+
+- **Dev Loop** — Primary execution is through the LangGraph graph defined in `src/nodes/dev_loop/`. The exact runner script is likely in `scripts/` or invoked programmatically.
+- **Tests** — Run via `pytest` from the project root. Test files include `src/nodes/dev_loop/test_loop.py` and the `tests/` directory.
+- **Configuration** — Requires a `.env` file with API keys (minimally an Anthropic API key for `langchain-anthropic`).

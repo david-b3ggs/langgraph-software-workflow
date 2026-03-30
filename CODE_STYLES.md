@@ -1,107 +1,58 @@
-# CODE_STYLES.md — Code Architecture Standards
+# CODE_STYLES.md
 
-## Guiding Principles
+## File & Module Layout
 
-1. **Orchestrator is deterministic code** — LLMs do cognitive work (planning, writing, reviewing). The orchestrator does coordination (routing, sequencing, state, retries). Never mix these.
-2. **Structured outputs at all boundaries** — JSON/schema-validated output between every stage. Free text only inside agent reasoning.
-3. **Shared state, no direct agent-to-agent calls** — agents read/write `DevLoopState`. Every run is reproducible from a state snapshot.
-4. **Escalation is a first-class output** — retry cap hits produce structured artifacts, not exceptions.
-
-## Node Patterns
-
-### Async node signature
-```python
-async def my_node(state: DevLoopState) -> dict:
-    # Read from state
-    # Do work (I/O, LLM call, subprocess)
-    # Return ONLY the fields that changed — partial update dict
-    return {"field": new_value}
+```
+src/
+  └── nodes/
+        └── dev_loop/       — Core development loop graph nodes and logic
+scripts/                     — Utility and runner scripts
+tests/                       — Top-level test suite
 ```
 
-Nodes must return partial dicts, not the full state object. Never mutate state in place.
+- **Source code** lives under `src/`. Node/agent implementations are organized by function under `src/nodes/`.
+- **Graph nodes** for the dev loop are grouped in `src/nodes/dev_loop/`.
+- **Scripts** (runners, utilities) go in `scripts/`.
+- **New modules** that represent graph nodes or agent logic should be added under `src/nodes/`, in a subdirectory named for their functional area (e.g., `src/nodes/ingestion/`).
+- **Shared state schemas and configuration** should live at the `src/` level or in a dedicated `src/models/` or `src/config/` module if one is created.
+- **Context markdown files** (`PROJECT.md`, `CODE_STYLES.md`, `BRAND_STYLES.md`, `TESTING.md`) live at the repository root and are both generated and consumed by agents.
 
-### LLM nodes — structured output
-```python
-llm = get_llm().with_structured_output(MySchema)
-result = await llm.ainvoke([SystemMessage(system_prompt), HumanMessage(user_content)])
-```
+## Naming Conventions
 
-### Retry pattern (in-node, not graph-level)
-```python
-for attempt in range(MAX_RETRIES):
-    try:
-        result = await llm.ainvoke(...)
-        break
-    except ValidationError:
-        if attempt == MAX_RETRIES - 1:
-            return {"plan": None}  # Signal halt via state
-        continue
-```
+- **Files and directories**: `snake_case` (e.g., `dev_loop/`, `test_loop.py`).
+- **Python modules**: `snake_case`.
+- **Classes**: `PascalCase`. Pydantic models follow this convention (e.g., state schemas, settings classes).
+- **Functions and methods**: `snake_case`. Async functions use the same convention with no special prefix.
+- **Constants**: `UPPER_SNAKE_CASE`.
+- **Test files**: Prefixed with `test_` (e.g., `test_loop.py`), following pytest discovery conventions.
 
-## Routing Functions
+## Async Patterns
 
-Routing functions in `src/routers/` are **pure functions** — no I/O, no side effects. They inspect state and return either a destination string or a list of `Send` objects. They are unit-testable without a running graph.
-
-```python
-def route_review(state: DevLoopState):
-    if state.get("review_result", {}).get("passed"):
-        return "test_loop"
-    if state.get("review_retry_count", 0) >= 2:
-        return "user_elicitation"
-    return dispatch_workers(state)  # Returns [Send(...), ...]
-```
-
-## State Reducers
-
-Fields that accumulate parallel worker results use `operator.or_` (dict merge):
-```python
-worker_outputs: Annotated[dict[str, WorkerOutput], operator.or_]
-```
-
-Fields that accumulate list results use `operator.add`:
-```python
-messages: Annotated[list, operator.add]
-```
-
-All other fields are plain assignment (last-write wins).
-
-## Tools Layer (`src/tools/`)
-
-Tools are side-effectful I/O helpers separated from node logic. Nodes call tools; nodes do not contain raw subprocess calls or file reads directly. This keeps nodes unit-testable by mocking tool functions.
-
-- `file_tools.py` — MD file loading, hashing, writing
-- `git_tools.py` — `unidiff` diff parsing, subprocess git ops
-- `graph_tools.py` — NetworkX import graph builder
-- `context_tools.py` (Phase 3) — MD compression, token budget enforcement
-
-## LLM Client
-
-Always use `get_llm()` from `src/llm/client.py`. Never instantiate `ChatAnthropic` directly in node code. This ensures model name, temperature, and LangSmith tracing are configured in one place.
-
-## Config and Secrets
-
-All configuration via `src/config.py` (Pydantic `BaseSettings`). All secrets in `.env`. Never hardcode API keys or paths.
+- **Async-first**: The project uses async I/O throughout. Graph nodes and agent functions should be implemented as `async def`.
+- **Libraries**: `httpx` (async HTTP), `aiosqlite` (async SQLite), and `pytest-asyncio` confirm the async-everywhere approach.
+- **Event loop**: Assumed to be managed by LangGraph's execution runtime. Do not create or manually manage event loops inside node functions.
+- **Checkpointing**: State persistence uses `langgraph-checkpoint-sqlite` backed by `aiosqlite`, so checkpoint operations are non-blocking.
+- When calling any I/O-bound operation (HTTP requests, database access, file system operations), use the async variant. Avoid `sync` wrappers or `run_in_executor` unless interfacing with a library that has no async API.
 
 ## Error Handling
 
-| Error type | Strategy |
-|---|---|
-| Transient (network, rate limit) | `RetryPolicy` on `add_node()` |
-| LLM tool failures | `ToolNode(handle_tool_errors=True)` |
-| Schema validation failure | In-node retry up to cap, then return sentinel value |
-| Unexpected | Let bubble up — don't swallow |
+- **Graph-level retry/resume**: LangGraph checkpointing enables retry and recovery on node failure. Nodes should raise exceptions on unrecoverable errors rather than silently swallowing them, so the graph runtime can handle retry logic.
+- **Let exceptions propagate**: Do not catch broad `Exception` unless adding meaningful context or performing cleanup. Prefer specific exception types.
+- **Logging**: Use Python's standard `logging` module. Each module should define its own logger: `logger = logging.getLogger(__name__)`.
+- **Validation errors**: Pydantic v2 models handle input validation; let `ValidationError` propagate to signal malformed state.
 
-## File Naming
+## Imports & Dependencies
 
-- Node files: `src/nodes/<pipeline>/<node_name>.py` — one node per file
-- Router files: `src/routers/<pipeline>_routers.py` — all routing for one graph
-- Tool files: `src/tools/<domain>_tools.py`
+- **Standard library imports first**, then third-party, then local — following PEP 8 import ordering.
+- **Absolute imports** from the `src` package (e.g., `from src.nodes.dev_loop.module import ...`).
+- **All dependencies** are declared in `requirements.txt` at the repo root with minimum version pins (e.g., `langgraph>=0.2.0`).
+- **Adding new dependencies**: Append to `requirements.txt` with a minimum version pin. Do not use upper-bound pins unless there is a known incompatibility.
+- **Environment variables**: Loaded via `python-dotenv` from a `.env` file. Access configuration through `pydantic-settings` models, not raw `os.getenv()` calls.
 
-## Import Conventions
+## Testing Approach
 
-```python
-# Absolute imports only (src/ is on sys.path via CLI scripts)
-from src.state.dev_loop_state import DevLoopState
-from src.tools.file_tools import load_md_files
-from src.llm.client import get_llm
-```
+- **Framework**: `pytest` with `pytest-asyncio` for async test support.
+- **Test locations**: Tests colocate with source when tightly coupled to a module (e.g., `src/nodes/dev_loop/test_loop.py`) and also exist in the top-level `tests/` directory for broader integration or cross-cutting tests.
+- **Test file naming**: `test_*.py`, following pytest auto-discovery defaults.
+- **Running tests**: Execute `pytest` from the project root. No special flags are required beyond what `pytest-asyncio` provides (async tests should be marked with `@pytest.mark.asyncio`).
+- **New tests**: Place unit tests for a specific node alongside that node's source. Place integration or end-to-end tests in `tests/`.
