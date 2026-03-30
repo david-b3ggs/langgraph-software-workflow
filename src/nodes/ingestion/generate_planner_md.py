@@ -18,8 +18,8 @@ This file is read by an AI planning agent before it breaks down development task
 
 Write a clear, factual PROJECT.md covering:
 1. **Purpose** — what this project does in 2-3 sentences
-2. **Architecture** — high-level component breakdown (dirs, layers, data flow)
-3. **Languages & Frameworks** — detected stack with roles
+2. **Architecture** — high-level component breakdown (dirs, layers, data flow). If available, add where this project sits in grander architecture.
+3. **Languages & Frameworks** — detected stack and languages, with roles
 4. **Key Conventions** — anything evident from the existing docs or structure (naming, module layout, async patterns, etc.)
 5. **Entry Points** — how the system is started/invoked
 
