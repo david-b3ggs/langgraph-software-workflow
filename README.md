@@ -62,7 +62,7 @@ and injects it into the generated context files.
 **Requires Context7 running locally as an HTTP/SSE server:**
 
 ```bash
-npx -y @upstash/context7-mcp --transport http --port 3000
+npx -y @upstash/context7-mcp --transport http --port 7174
 ```
 
 Add to `.env` (these are the defaults):
