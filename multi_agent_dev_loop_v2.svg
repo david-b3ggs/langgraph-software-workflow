@@ -1,0 +1,210 @@
+<svg width="100%" viewBox="0 0 680 924" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+<style>
+  :root {
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-background-secondary: #f1efe8;
+    --color-border-tertiary: rgba(0,0,0,0.15);
+    --color-border-secondary: rgba(0,0,0,0.3);
+    --font-sans: "Helvetica Neue", Arial, sans-serif;
+    --p: #1a1a18;
+    --s: rgba(0,0,0,0.3);
+    --t: rgba(0,0,0,0.15);
+    --bg2: #f1efe8;
+    --b: rgba(0,0,0,0.3);
+  }
+  text { font-family: var(--font-sans); fill: var(--p); }
+  .t  { font-size: 14px; font-weight: 400; fill: var(--p); }
+  .ts { font-size: 12px; font-weight: 400; fill: var(--color-text-secondary); }
+  .th { font-size: 14px; font-weight: 500; fill: var(--p); }
+  .box { fill: var(--bg2); stroke: var(--s); }
+  .arr { fill: none; stroke: var(--b); stroke-width: 1.5; }
+  .leader { fill: none; stroke: var(--t); stroke-width: 0.5; stroke-dasharray: 4 3; }
+
+  /* Color ramps */
+  .c-purple rect, .c-purple circle, .c-purple ellipse { fill: #EEEDFE; stroke: #534AB7; }
+  .c-purple .th { fill: #3C3489; }
+  .c-purple .ts { fill: #534AB7; }
+
+  .c-teal rect, .c-teal circle, .c-teal ellipse { fill: #E1F5EE; stroke: #0F6E56; }
+  .c-teal .th { fill: #085041; }
+  .c-teal .ts { fill: #0F6E56; }
+
+  .c-coral rect, .c-coral circle, .c-coral ellipse { fill: #FAECE7; stroke: #993C1D; }
+  .c-coral .th { fill: #712B13; }
+  .c-coral .ts { fill: #993C1D; }
+
+  .c-pink rect, .c-pink circle, .c-pink ellipse { fill: #FBEAF0; stroke: #993556; }
+  .c-pink .th { fill: #72243E; }
+  .c-pink .ts { fill: #993556; }
+
+  .c-gray rect, .c-gray circle, .c-gray ellipse { fill: #F1EFE8; stroke: #5F5E5A; }
+  .c-gray .th { fill: #444441; }
+  .c-gray .ts { fill: #5F5E5A; }
+
+  .c-blue rect, .c-blue circle, .c-blue ellipse { fill: #E6F1FB; stroke: #185FA5; }
+  .c-blue .th { fill: #0C447C; }
+  .c-blue .ts { fill: #185FA5; }
+
+  .c-amber rect, .c-amber circle, .c-amber ellipse { fill: #FAEEDA; stroke: #854F0B; }
+  .c-amber .th { fill: #633806; }
+  .c-amber .ts { fill: #854F0B; }
+
+  .c-green rect, .c-green circle, .c-green ellipse { fill: #EAF3DE; stroke: #3B6D11; }
+  .c-green .th { fill: #27500A; }
+  .c-green .ts { fill: #3B6D11; }
+</style>
+</defs>
+
+<!-- Main flow arrows -->
+<line x1="340" y1="84" x2="340" y2="120" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="176" x2="340" y2="212" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="268" x2="340" y2="304" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="348" x2="340" y2="368" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<!-- Fan-out to workers -->
+<line x1="340" y1="390" x2="340" y2="400" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none"/>
+<line x1="138" y1="400" x2="542" y2="400" stroke="rgba(0,0,0,0.3)" stroke-width="1" fill="none"/>
+<line x1="138" y1="400" x2="138" y2="412" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="400" x2="340" y2="412" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="542" y1="400" x2="542" y2="412" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<!-- Collect bus with checkpoint dots -->
+<line x1="138" y1="468" x2="138" y2="480" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none"/>
+<line x1="340" y1="468" x2="340" y2="480" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none"/>
+<line x1="542" y1="468" x2="542" y2="480" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none"/>
+<line x1="138" y1="480" x2="542" y2="480" stroke="rgba(0,0,0,0.3)" stroke-width="1" fill="none"/>
+<line x1="340" y1="486" x2="340" y2="506" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<!-- Checkpoint 2 dots -->
+<circle cx="138" cy="480" r="5" fill="#f1efe8" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+<circle cx="340" cy="480" r="5" fill="#f1efe8" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+<circle cx="542" cy="480" r="5" fill="#f1efe8" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+<text class="ts" x="548" y="476">ckpt 2</text>
+
+<!-- Continuing flow -->
+<line x1="340" y1="550" x2="340" y2="580" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="636" x2="340" y2="654" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="676" x2="340" y2="692" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="748" x2="340" y2="762" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="784" x2="340" y2="800" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+<line x1="340" y1="844" x2="340" y2="860" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<!-- Review retry path -->
+<path d="M460,602 L634,602 L634,398 L544,398" fill="none" stroke="#993C1D" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+<!-- Test retry path -->
+<path d="M460,714 L644,714 L644,394 L544,394" fill="none" stroke="#633806" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+<text class="ts" x="630" y="499" text-anchor="end">review ≤2×</text>
+<text class="ts" x="640" y="553" text-anchor="end">test ≤3×</text>
+
+<!-- Elicitation paths -->
+<path d="M460,614 L488,614" fill="none" stroke="#993556" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<path d="M460,726 L571,726 L571,643" fill="none" stroke="#993556" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+
+<!-- Stage 0: Task Ingestion -->
+<g>
+  <rect class="box" x="220" y="40" width="240" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="62" text-anchor="middle" dominant-baseline="central">Task ingestion</text>
+</g>
+
+<!-- Stage 1: Context Assembly -->
+<g>
+  <rect class="box" x="220" y="120" width="240" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="138" text-anchor="middle" dominant-baseline="central">Context assembly</text>
+  <text class="ts" x="340" y="158" text-anchor="middle" dominant-baseline="central">Compress + select MD sections</text>
+</g>
+
+<!-- Stage 2: Planner Agent -->
+<g class="c-purple">
+  <rect x="220" y="212" width="240" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="230" text-anchor="middle" dominant-baseline="central">Planner agent</text>
+  <text class="ts" x="340" y="250" text-anchor="middle" dominant-baseline="central">Dependency graph + migration scope</text>
+</g>
+
+<!-- Human Gate -->
+<g class="c-pink">
+  <rect x="220" y="304" width="240" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="326" text-anchor="middle" dominant-baseline="central">Human — validate plan</text>
+</g>
+
+<!-- Checkpoint 1 -->
+<g class="c-gray">
+  <rect x="295" y="368" width="90" height="22" rx="11" stroke-width="0.5"/>
+  <text class="ts" x="340" y="379" text-anchor="middle" dominant-baseline="central">checkpoint 1</text>
+</g>
+
+<!-- Workers -->
+<g class="c-teal">
+  <rect x="58" y="412" width="160" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="138" y="430" text-anchor="middle" dominant-baseline="central">Backend agent</text>
+  <text class="ts" x="138" y="450" text-anchor="middle" dominant-baseline="central">Go / APIs + migrations</text>
+</g>
+
+<g class="c-teal">
+  <rect x="252" y="412" width="176" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="430" text-anchor="middle" dominant-baseline="central">Frontend agent</text>
+  <text class="ts" x="340" y="450" text-anchor="middle" dominant-baseline="central">React / Brand + Code MD</text>
+</g>
+
+<g class="c-teal">
+  <rect x="462" y="412" width="160" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="542" y="430" text-anchor="middle" dominant-baseline="central">Docs agent</text>
+  <text class="ts" x="542" y="450" text-anchor="middle" dominant-baseline="central">READMEs / Testing MD</text>
+</g>
+
+<!-- Code Review Graph -->
+<g class="c-blue">
+  <rect x="220" y="506" width="240" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="520" text-anchor="middle" dominant-baseline="central">Code review graph</text>
+  <text class="ts" x="340" y="538" text-anchor="middle" dominant-baseline="central">Diff → impact subgraph</text>
+</g>
+
+<!-- Review Gate -->
+<g class="c-coral">
+  <rect x="220" y="580" width="240" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="598" text-anchor="middle" dominant-baseline="central">Review gate — CodeRabbit</text>
+  <text class="ts" x="340" y="618" text-anchor="middle" dominant-baseline="central">Code + Brand MD validation</text>
+</g>
+
+<!-- User Elicitation -->
+<g class="c-pink">
+  <rect x="490" y="585" width="162" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="571" y="603" text-anchor="middle" dominant-baseline="central">User elicitation</text>
+  <text class="ts" x="571" y="623" text-anchor="middle" dominant-baseline="central">Halt + notify engineer</text>
+</g>
+
+<!-- Checkpoint 3 -->
+<g class="c-gray">
+  <rect x="295" y="654" width="90" height="22" rx="11" stroke-width="0.5"/>
+  <text class="ts" x="340" y="665" text-anchor="middle" dominant-baseline="central">checkpoint 3</text>
+</g>
+
+<!-- Test Loop -->
+<g class="c-amber">
+  <rect x="220" y="692" width="240" height="56" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="710" text-anchor="middle" dominant-baseline="central">Test loop</text>
+  <text class="ts" x="340" y="730" text-anchor="middle" dominant-baseline="central">Unit + integration tests</text>
+</g>
+
+<!-- Checkpoint 4 -->
+<g class="c-gray">
+  <rect x="295" y="762" width="90" height="22" rx="11" stroke-width="0.5"/>
+  <text class="ts" x="340" y="773" text-anchor="middle" dominant-baseline="central">checkpoint 4</text>
+</g>
+
+<!-- Artifact Update -->
+<g class="c-green">
+  <rect x="220" y="800" width="240" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="822" text-anchor="middle" dominant-baseline="central">Artifact update</text>
+</g>
+
+<!-- Task Complete -->
+<g>
+  <rect class="box" x="260" y="860" width="160" height="44" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="882" text-anchor="middle" dominant-baseline="central">Task complete</text>
+</g>
+</svg>
