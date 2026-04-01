@@ -3,7 +3,6 @@ import logging
 import re
 from pathlib import Path
 
-from src.config import settings
 from src.state.ingestion_state import IngestionState
 from src.tools.documentation_tools import fetch_docs_for_packages
 
@@ -42,10 +41,6 @@ async def fetch_docs_node(state: IngestionState) -> dict:
             if m:
                 packages.append(m.group(1).split("/")[-1])
 
-    fetched = await fetch_docs_for_packages(
-        packages,
-        mcp_url=settings.context7_mcp_url,
-        transport=settings.context7_mcp_transport,
-    )
+    fetched = await fetch_docs_for_packages(packages)
     logger.info("fetch_docs: fetched docs for %d libraries", len(fetched))
     return {"fetched_docs": fetched}

@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "ingestion": "./src/graphs/ingestion_graph.py:ingestion_graph",
+    "dev_loop": "./src/graphs/dev_loop_graph.py:dev_loop_graph"
+  },
+  "env": ".env"
+}

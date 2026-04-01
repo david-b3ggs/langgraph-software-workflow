@@ -20,9 +20,8 @@ class Settings(BaseSettings):
     # CodeRabbit (optional — LLM fallback used if absent)
     coderabbit_api_key: str = ""
 
-    # Context7 MCP
-    context7_mcp_url: str = "http://localhost:7174/sse"
-    context7_mcp_transport: str = "sse"
+    # Context7 MCP (stdio — spawns npx subprocess)
+    context7_enabled: bool = True
 
     # Paths
     checkpoints_db: str = "checkpoints.db"

@@ -86,6 +86,7 @@ async def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the multi-agent dev loop.")
+    parser.add_argument("--path", required=False, default="./", help="Select the path of the repo to run on")
     parser.add_argument("--task", required=True, help="Task as JSON string or path to JSON file")
     parser.add_argument("--thread-id", default=None, help="Thread ID for resuming a run")
     parser.add_argument("--db", default=None, help="Path to checkpoints SQLite DB")

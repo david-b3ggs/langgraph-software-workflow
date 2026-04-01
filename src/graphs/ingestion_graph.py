@@ -1,4 +1,8 @@
-from langgraph.graph import StateGraph, START, END
+try:
+    from langgraph.graph import StateGraph, START, END
+except ModuleNotFoundError:
+    # Helpful error message if langgraph isn't installed or import path is wrong
+    raise ModuleNotFoundError("No module named 'langgraph'. Make sure 'langgraph' is installed in your Python environment (pip install langgraph) or the package is available on PYTHONPATH.")
 
 from src.state.ingestion_state import IngestionState
 
@@ -62,3 +66,7 @@ def build_ingestion_graph() -> StateGraph:
 def compile_ingestion() -> object:
     graph = build_ingestion_graph()
     return graph.compile()
+
+
+# Module-level instance for `langgraph dev` / LangGraph Studio
+ingestion_graph = compile_ingestion()

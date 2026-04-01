@@ -3,6 +3,9 @@ import json
 import logging
 import re
 
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
 logger = logging.getLogger(__name__)
 
 PACKAGE_TO_LIBRARY_NAME: dict[str, str] = {
@@ -52,6 +55,11 @@ PACKAGE_TO_LIBRARY_NAME: dict[str, str] = {
 _RESOLVE_TOOL = "resolve-library-id"
 _DOCS_TOOL    = "query-docs"
 
+_SERVER_PARAMS = StdioServerParameters(
+    command="npx",
+    args=["-y", "@upstash/context7-mcp@latest"],
+)
+
 
 def _parse_library_id(text: str) -> str | None:
     """Extract a Context7 library ID from a resolve-library-id response."""
@@ -69,52 +77,49 @@ def _parse_library_id(text: str) -> str | None:
     return None
 
 
-async def _resolve_library_id(tool, library_name: str) -> str | None:
-    result = await tool.ainvoke({"libraryName": library_name, "query": "API reference and usage guide"})
-    text = result if isinstance(result, str) else getattr(result, "content", str(result))
-    library_id = _parse_library_id(text)
-    if not library_id:
-        logger.warning("fetch_docs: could not resolve library ID for %r", library_name)
-    return library_id
+async def fetch_docs_for_packages(packages: list[str]) -> dict[str, str]:
+    """Fetch Context7 docs for a list of package names via stdio MCP.
 
-
-async def _query_docs(tool, library_id: str, query: str) -> str:
-    result = await tool.ainvoke({"libraryId": library_id, "query": query})
-    return result if isinstance(result, str) else getattr(result, "content", str(result))
-
-
-async def fetch_docs_for_packages(
-    packages: list[str],
-    mcp_url: str,
-    transport: str = "sse",
-) -> dict[str, str]:
-    """Fetch Context7 docs for a list of package names. Returns {pkg_name: doc_content}."""
-    from langchain_mcp_adapters.client import MultiServerMCPClient
-
+    Spawns `npx @upstash/context7-mcp` as a subprocess — no running server needed.
+    Returns {pkg_name: doc_content}. Returns {} on any connection failure.
+    """
     filtered = [p for p in packages if p in PACKAGE_TO_LIBRARY_NAME]
     if not filtered:
         logger.info("fetch_docs: no known packages to fetch docs for")
         return {}
 
     try:
-        async with MultiServerMCPClient({"context7": {"url": mcp_url, "transport": transport}}) as client:
-            tools = {t.name: t for t in client.get_tools()}
-            for required in (_RESOLVE_TOOL, _DOCS_TOOL):
-                if required not in tools:
-                    raise RuntimeError(f"Context7 MCP missing tool: {required!r}")
+        async with stdio_client(_SERVER_PARAMS) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
 
-            resolve_tool = tools[_RESOLVE_TOOL]
-            docs_tool = tools[_DOCS_TOOL]
+                tools_result = await session.list_tools()
+                tool_names = {t.name for t in tools_result.tools}
+                for required in (_RESOLVE_TOOL, _DOCS_TOOL):
+                    if required not in tool_names:
+                        raise RuntimeError(f"Context7 MCP missing tool: {required!r}")
 
-            async def _fetch_one(pkg: str) -> tuple[str, str]:
-                library_name = PACKAGE_TO_LIBRARY_NAME[pkg]
-                library_id = await _resolve_library_id(resolve_tool, library_name)
-                if not library_id:
-                    return pkg, ""
-                content = await _query_docs(docs_tool, library_id, "API reference, configuration, and usage guide")
-                return pkg, content
+                async def _fetch_one(pkg: str) -> tuple[str, str]:
+                    library_name = PACKAGE_TO_LIBRARY_NAME[pkg]
 
-            results = await asyncio.gather(*[_fetch_one(pkg) for pkg in filtered], return_exceptions=True)
+                    resolve_result = await session.call_tool(
+                        _RESOLVE_TOOL,
+                        {"libraryName": library_name, "query": "API reference and usage guide"},
+                    )
+                    resolve_text = resolve_result.content[0].text if resolve_result.content else ""
+                    library_id = _parse_library_id(resolve_text)
+                    if not library_id:
+                        logger.warning("fetch_docs: could not resolve library ID for %r", library_name)
+                        return pkg, ""
+
+                    docs_result = await session.call_tool(
+                        _DOCS_TOOL,
+                        {"libraryId": library_id, "query": "API reference, configuration, and usage guide"},
+                    )
+                    doc_text = docs_result.content[0].text if docs_result.content else ""
+                    return pkg, doc_text
+
+                results = await asyncio.gather(*[_fetch_one(pkg) for pkg in filtered], return_exceptions=True)
 
         output: dict[str, str] = {}
         for item in results:
@@ -127,5 +132,5 @@ async def fetch_docs_for_packages(
         return output
 
     except Exception as exc:
-        logger.warning("fetch_docs: MCP server unreachable or failed (%s) — skipping doc fetch", exc)
+        logger.warning("fetch_docs: Context7 unavailable (%s) — skipping doc fetch", exc)
         return {}

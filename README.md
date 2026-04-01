@@ -53,27 +53,16 @@ LANGSMITH_PROJECT=AI-WORKFLOW
 
 ---
 
-## Context7 MCP (required for JS framework doc fetching)
+## Context7 MCP (JS framework doc fetching)
 
 When ingesting a repo that uses Next.js, React, Prisma, or similar JS frameworks,
 Phase 0 fetches live library documentation via [Context7](https://github.com/upstash/context7)
 and injects it into the generated context files.
 
-**Requires Context7 running locally as an HTTP/SSE server:**
+**Requires `npx` on PATH** — the ingestion pipeline spawns `npx @upstash/context7-mcp` automatically as a subprocess. No separate server to start.
 
-```bash
-npx -y @upstash/context7-mcp --transport http --port 7174
-```
-
-Add to `.env` (these are the defaults):
-
-```env
-CONTEXT7_MCP_URL=http://localhost:7174/sse
-CONTEXT7_MCP_TRANSPORT=sse
-```
-
-**Python-only repos skip this step entirely.** If Context7 is not running when a
-JS repo is ingested, a warning is logged and the pipeline continues without library docs.
+**Python-only repos skip this step entirely.** If `npx` is unavailable or Context7 fails,
+a warning is logged and the pipeline continues without library docs.
 
 ---
 

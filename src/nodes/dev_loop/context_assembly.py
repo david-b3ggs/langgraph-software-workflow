@@ -1,18 +1,23 @@
 import logging
 from src.state.dev_loop_state import DevLoopState
+from src.tools import file_tools
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 async def context_assembly_node(state: DevLoopState) -> dict:
     """Load and compress MD files per task scope. Pin md_versions for this run."""
-    logger.info("context_assembly: scope=%s", state["task"].get("scope"))
-    # STUB — Phase 4 implements file loading, hashing, and compression
-    compressed_md = {
-        "PROJECT.md":     "(stub PROJECT.md content)",
-        "CODE_STYLES.md": "(stub CODE_STYLES.md content)",
-        "BRAND_STYLES.md":"(stub BRAND_STYLES.md content)",
-        "TESTING.md":     "(stub TESTING.md content)",
-    }
-    md_versions = {k: "stub-hash" for k in compressed_md}
-    return {"compressed_md": compressed_md, "md_versions": md_versions}
+    scope = state["task"].get("scope", "both")
+    logger.info("context_assembly: scope=%s", scope)
+
+    repo_path = state["task"].get("repo_path") or settings.repo_path
+    content = file_tools.load_md_files(repo_path)
+    versions = file_tools.hash_md_files(content)
+
+    # Backend tasks don't need brand/UI context
+    filtered = dict(content)
+    if scope == "backend":
+        filtered.pop("BRAND_STYLES.md", None)
+
+    return {"compressed_md": filtered, "md_versions": versions}

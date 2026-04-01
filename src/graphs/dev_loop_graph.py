@@ -99,3 +99,7 @@ async def build_checkpointer(db_path: str | None = None):
     path = db_path or settings.checkpoints_db
     conn = await aiosqlite.connect(path)
     return AsyncSqliteSaver(conn)
+
+
+# Module-level instance for `langgraph dev` / LangGraph Studio (uses CLI's in-memory checkpointer)
+dev_loop_graph = compile_dev_loop()
